@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-
 import '../repos/favorites_repo.dart';
 import '../repos/book_repo.dart';
 
@@ -37,12 +36,18 @@ class FavoritesPage extends StatelessWidget {
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, authSnap) {
         if (authSnap.connectionState == ConnectionState.waiting) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
         }
+
         final user = authSnap.data;
         if (user == null) {
           return Scaffold(
-            appBar: AppBar(title: const Text('ที่กดใจไว้')),
+            appBar: AppBar(
+              backgroundColor: Colors.green.shade700,
+              title: const Text('ที่กดใจไว้'),
+            ),
             body: Center(
               child: FilledButton(
                 onPressed: () => Navigator.pushNamed(context, '/login'),
@@ -57,13 +62,19 @@ class FavoritesPage extends StatelessWidget {
         final bookRepo = BookRepo();
 
         return Scaffold(
-          appBar: AppBar(title: const Text('ที่กดใจไว้')),
+          backgroundColor: Colors.grey.shade50,
+          appBar: AppBar(
+            title: const Text('ที่กดใจไว้'),
+            backgroundColor: Colors.green.shade700,
+            foregroundColor: Colors.white,
+          ),
           body: StreamBuilder<Set<String>>(
             stream: favRepo.idsStream(),
             builder: (_, favSnap) {
               if (favSnap.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
               }
+
               final favIds = favSnap.data ?? <String>{};
 
               return StreamBuilder<List<Map<String, dynamic>>>(
@@ -78,10 +89,49 @@ class FavoritesPage extends StatelessWidget {
                       .where((b) => favIds.contains((b['id'] ?? '') as String))
                       .toList();
 
+                  // ✅ ถ้าไม่มีเล่มโปรด แสดงตรงกลาง
                   if (books.isEmpty) {
-                    return const Center(child: Text('ยังไม่ได้กดใจเล่มใด'));
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Icon(Icons.favorite_border,
+                                size: 64, color: Colors.grey.shade400),
+                            const SizedBox(height: 12),
+                            Text(
+                              'ยังไม่ได้กดใจเล่มใด',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            FilledButton(
+                              style: FilledButton.styleFrom(
+                                backgroundColor: Colors.indigo.shade100,
+                                foregroundColor: Colors.indigo.shade900,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 24, vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                              ),
+                              onPressed: () {
+                                Navigator.pushNamed(context, '/home');
+                              },
+                              child: const Text('ไปเลือกหนังสือ'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
                   }
 
+                  // ✅ ถ้ามีหนังสือโปรด แสดงรายการ
                   return ListView.separated(
                     itemCount: books.length,
                     separatorBuilder: (_, __) => const Divider(height: 1),
@@ -106,8 +156,11 @@ class FavoritesPage extends StatelessWidget {
                                   width: 50,
                                   height: 70,
                                   fit: BoxFit.cover,
-                                  placeholder: (_, __) =>
-                                      Container(width: 50, height: 70, color: Colors.grey[200]),
+                                  placeholder: (_, __) => Container(
+                                    width: 50,
+                                    height: 70,
+                                    color: Colors.grey[200],
+                                  ),
                                   errorWidget: (_, __, ___) =>
                                       const Icon(Icons.broken_image),
                                 )
@@ -121,12 +174,16 @@ class FavoritesPage extends StatelessWidget {
                         subtitle: Text('฿${price.toStringAsFixed(0)}'),
                         trailing: IconButton(
                           tooltip: 'เอาออกจากที่กดใจ',
-                          icon: const Icon(Icons.favorite, color: Colors.red),
+                          icon:
+                              const Icon(Icons.favorite, color: Colors.redAccent),
                           onPressed: () async {
                             await favRepo.toggle(id, true);
-                            _toast(context, 'เอาออกจากที่กดใจแล้ว',
-                                color: Colors.redAccent,
-                                icon: Icons.favorite_border);
+                            _toast(
+                              context,
+                              'เอาออกจากที่กดใจแล้ว',
+                              color: Colors.redAccent,
+                              icon: Icons.favorite_border,
+                            );
                           },
                         ),
                       );

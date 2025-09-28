@@ -25,13 +25,14 @@ class _PaymentPageState extends State<PaymentPage> {
 
   String? get _uid => FirebaseAuth.instance.currentUser?.uid;
 
-  // ---------------- Helpers: number parsing & totals ----------------
+  // ✅ Helper แปลงตัวเลข
   double _toDouble(dynamic v, {double fallback = 0}) {
     if (v is num) return v.toDouble();
     final cleaned = (v?.toString() ?? '').replaceAll(RegExp(r'[^0-9\.\-]'), '');
     return double.tryParse(cleaned) ?? fallback;
   }
 
+  // ✅ คำนวณยอดรวมจาก items
   double _calcItemsTotal() {
     double sum = 0;
     for (final it in widget.items) {
@@ -42,16 +43,17 @@ class _PaymentPageState extends State<PaymentPage> {
     return sum;
   }
 
-  /// ใช้ totalPrice ถ้ามากกว่า 0 ไม่งั้นคำนวณจาก items
+  // ✅ ถ้ามี totalPrice ให้ใช้เลย ถ้าไม่มีก็รวมจาก items
   double get _displayTotal =>
       (widget.totalPrice > 0) ? widget.totalPrice : _calcItemsTotal();
 
-  // ---------------- Firestore streams ----------------
+  // ✅ ดึงข้อมูลผู้ใช้
   Stream<DocumentSnapshot<Map<String, dynamic>>> _userDoc() {
     if (_uid == null) return const Stream.empty();
     return FirebaseFirestore.instance.collection('users').doc(_uid).snapshots();
   }
 
+  // ✅ ดึงที่อยู่เริ่มต้น
   Stream<DocumentSnapshot<Map<String, dynamic>>?> _defaultAddressStream() {
     if (_uid == null) return Stream.value(null);
     final userRef = FirebaseFirestore.instance.collection('users').doc(_uid);
@@ -72,7 +74,7 @@ class _PaymentPageState extends State<PaymentPage> {
     });
   }
 
-  // ---------------- Place order ----------------
+  // ✅ สร้างคำสั่งซื้อ
   Future<void> _placeOrder(
     Map<String, dynamic> addressData,
     String addressId,
@@ -86,7 +88,7 @@ class _PaymentPageState extends State<PaymentPage> {
       final ordersRef = userRef.collection('orders');
 
       await ordersRef.add({
-        'total': _displayTotal, // ✅ ใช้ยอดที่คำนวณแล้ว
+        'total': _displayTotal,
         'method': _paymentMethod,
         'status': 'pending',
         'note': _noteCtrl.text.trim(),
@@ -106,7 +108,7 @@ class _PaymentPageState extends State<PaymentPage> {
 
       if (!mounted) return;
 
-      // ✅ ขอบคุณที่ชำระเงิน (popup กลางจอ)
+      // ✅ Popup ขอบคุณ
       await showDialog(
         context: context,
         barrierDismissible: false,
@@ -142,18 +144,28 @@ class _PaymentPageState extends State<PaymentPage> {
 
   @override
   Widget build(BuildContext context) {
+    // ✅ ถ้ายังไม่ล็อกอิน
     if (_uid == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('ชำระเงิน')),
         body: Center(
           child: FilledButton(
             onPressed: () => Navigator.pushNamed(context, '/login'),
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(30),
+              ),
+            ),
             child: const Text('ไปหน้าเข้าสู่ระบบ'),
           ),
         ),
       );
     }
 
+    // ✅ ถ้าล็อกอินแล้ว
     return Scaffold(
       appBar: AppBar(title: const Text('ชำระเงิน')),
       body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
@@ -239,7 +251,7 @@ class _PaymentPageState extends State<PaymentPage> {
                           value: 'transfer',
                           groupValue: _paymentMethod,
                           onChanged: (v) => setState(() => _paymentMethod = v!),
-                          title: const Text('โอน/บัตร (mock)'),
+                          title: const Text('ชำระเงินผ่านการโอนเงิน'),
                         ),
                         const Divider(height: 1),
                         RadioListTile<String>(
@@ -268,8 +280,8 @@ class _PaymentPageState extends State<PaymentPage> {
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 10),
+                      contentPadding:
+                          const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -305,6 +317,8 @@ class _PaymentPageState extends State<PaymentPage> {
                           ? null
                           : () => _placeOrder(addrData!, addrId!),
                       style: FilledButton.styleFrom(
+                        backgroundColor: Colors.green, // ✅ สีปุ่ม
+                        foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(28)),
                       ),
