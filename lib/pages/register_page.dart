@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -22,25 +23,41 @@ class _RegisterPageState extends State<RegisterPage> {
     super.dispose();
   }
 
-  void _toast(String msg) =>
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+  void _toast(String msg) {
+    final bar = SnackBar(content: Text(msg));
+    final m = ScaffoldMessenger.of(context);
+    m.hideCurrentSnackBar();
+    m.showSnackBar(bar);
+  }
 
   Future<void> _register() async {
     if (!_formKey.currentState!.validate() || _busy) return;
     setState(() => _busy = true);
 
-    try {
-      final cred = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: _emailCtl.text.trim(),
-        password: _passCtl.text.trim(),
-      );
+    final name = _usernameCtl.text.trim();
+    final email = _emailCtl.text.trim();
+    final pass = _passCtl.text;
 
-      // ตั้ง displayName = ชื่อผู้ใช้
-      await cred.user?.updateDisplayName(_usernameCtl.text.trim());
+    try {
+      // 1) สมัครผู้ใช้
+      final cred = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(email: email, password: pass);
+
+      final user = cred.user!;
+      // 2) ตั้ง displayName บน Firebase Auth แล้วรีเฟรช
+      await user.updateDisplayName(name);
+      await user.reload();
+
+      // 3) บันทึกข้อมูลพื้นฐานลง Firestore (merge ป้องกันทับ field อื่น)
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+        'displayName': name,
+        'email': user.email,
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
 
       if (!mounted) return;
       _toast('สมัครสมาชิกสำเร็จ');
-      // ไปหน้าแรก (หรือจะ pushReplacementNamed(context, '/login') ก็ได้)
       Navigator.pushReplacementNamed(context, '/home');
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
@@ -72,13 +89,10 @@ class _RegisterPageState extends State<RegisterPage> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Text(
-                        'สมัครสมาชิก',
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                      ),
+                      const Text('สมัครสมาชิก',
+                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 16),
 
-                      // Username
                       TextFormField(
                         controller: _usernameCtl,
                         decoration: const InputDecoration(
@@ -95,7 +109,6 @@ class _RegisterPageState extends State<RegisterPage> {
                       ),
                       const SizedBox(height: 12),
 
-                      // Email
                       TextFormField(
                         controller: _emailCtl,
                         decoration: const InputDecoration(
@@ -109,7 +122,6 @@ class _RegisterPageState extends State<RegisterPage> {
                       ),
                       const SizedBox(height: 12),
 
-                      // Password
                       TextFormField(
                         controller: _passCtl,
                         decoration: const InputDecoration(

@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 
 import 'login_required_dialog.dart';
 
-class BookGrid extends StatelessWidget {
+class BookGrid extends StatefulWidget {
   final String bookId;
   final String title;
   final dynamic price;
@@ -19,12 +19,167 @@ class BookGrid extends StatelessWidget {
     required this.coverUrl,
   });
 
+  @override
+  State<BookGrid> createState() => _BookGridState();
+}
+
+class _BookGridState extends State<BookGrid> {
+  bool isFavorite = false;
+  bool isInCart = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkFavorite();
+    _checkInCart();
+  }
+
   double _priceAsDouble(dynamic v) =>
       v is num ? v.toDouble() : double.tryParse(v?.toString() ?? '') ?? 0.0;
 
+  // ---------- Toast (SnackBar ลอย) ----------
+  void _toast(BuildContext context, String msg,
+      {Color? color, IconData? icon, int seconds = 2}) {
+    final bar = SnackBar(
+      content: Row(
+        children: [
+          if (icon != null) ...[
+            Icon(icon, color: Colors.white),
+            const SizedBox(width: 8),
+          ],
+          Expanded(child: Text(msg)),
+        ],
+      ),
+      duration: Duration(seconds: seconds),
+      backgroundColor: color ?? Colors.black87,
+      behavior: SnackBarBehavior.floating,
+      margin: const EdgeInsets.all(12),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    );
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(bar);
+  }
+
+  // ---------- ตรวจสถานะ Favorite ----------
+  Future<void> _checkFavorite() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('favorites')
+        .doc(widget.bookId)
+        .get();
+    if (mounted) setState(() => isFavorite = doc.exists);
+  }
+
+  // ---------- ตรวจสถานะในตะกร้า ----------
+  Future<void> _checkInCart() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    final doc = await FirebaseFirestore.instance
+        .collection('carts')
+        .doc(user.uid)
+        .collection('items')
+        .doc(widget.bookId)
+        .get();
+    if (mounted) setState(() => isInCart = doc.exists);
+  }
+
+  // ---------- Toggle Favorite ----------
+  Future<void> _toggleFavorite(BuildContext context) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      await showDialog(context: context, builder: (_) => const LoginRequiredDialog());
+      return;
+    }
+
+    final favRef = FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('favorites')
+        .doc(widget.bookId);
+
+    final doc = await favRef.get();
+    if (doc.exists) {
+      await favRef.delete();
+      if (!mounted) return;
+      setState(() => isFavorite = false);
+      _toast(context, 'ลบออกจากรายการโปรดแล้ว',
+          color: Colors.redAccent, icon: Icons.favorite_border);
+    } else {
+      // ✅ เก็บข้อมูลให้ครบ เพื่อให้หน้า favorites แสดงได้เลย
+      await favRef.set({
+        'title': widget.title,
+        'price': _priceAsDouble(widget.price),
+        'coverUrl': widget.coverUrl,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+      if (!mounted) return;
+      setState(() => isFavorite = true);
+      _toast(context, 'เพิ่มในรายการโปรดแล้ว',
+          color: Colors.green, icon: Icons.favorite);
+    }
+  }
+
+  // ---------- เพิ่มลงตะกร้า (ใช้ Transaction) ----------
+  Future<void> _onAddToCart(BuildContext context) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      await showDialog(context: context, builder: (_) => const LoginRequiredDialog());
+      return;
+    }
+
+    final itemRef = FirebaseFirestore.instance
+        .collection('carts')
+        .doc(user.uid)
+        .collection('items')
+        .doc(widget.bookId);
+
+    bool existed = false; // ✅ จำสถานะก่อนอัปเดต เพื่อใช้แสดงข้อความให้ถูก
+    try {
+      await FirebaseFirestore.instance.runTransaction((tx) async {
+        final snap = await tx.get(itemRef);
+        existed = snap.exists;
+
+        if (existed) {
+          final currentQty = (snap.data()?['qty'] is num)
+              ? (snap.data()!['qty'] as num).toInt()
+              : 0;
+          tx.update(itemRef, {
+            'qty': currentQty + 1,
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+        } else {
+          tx.set(itemRef, {
+            'title': widget.title,
+            'price': _priceAsDouble(widget.price),
+            'coverUrl': widget.coverUrl,
+            'qty': 1,
+            'createdAt': FieldValue.serverTimestamp(),
+          });
+        }
+      });
+
+      if (!mounted) return;
+      setState(() => isInCart = true);
+      _toast(
+        context,
+        existed ? 'เพิ่มจำนวน +1' : 'เพิ่มลงตะกร้าแล้ว',
+        color: existed ? Colors.orange : Colors.indigo,
+        icon: Icons.add_shopping_cart,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      _toast(context, 'เพิ่มลงตะกร้าไม่สำเร็จ',
+          color: Colors.redAccent, icon: Icons.error);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final priceValue = _priceAsDouble(price);
+    final priceValue = _priceAsDouble(widget.price);
 
     return Card(
       shape: RoundedRectangleBorder(
@@ -34,11 +189,11 @@ class BookGrid extends StatelessWidget {
       elevation: 0,
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => Navigator.pushNamed(context, '/bookDetail', arguments: bookId),
+        onTap: () => Navigator.pushNamed(context, '/bookDetail', arguments: widget.bookId),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ✅ รูปปกเต็มพื้นที่การ์ด (ครอบเต็มแบบ cover)
+            // ปก
             Expanded(
               child: ClipRRect(
                 borderRadius: const BorderRadius.only(
@@ -46,28 +201,24 @@ class BookGrid extends StatelessWidget {
                   topRight: Radius.circular(12),
                 ),
                 child: CachedNetworkImage(
-                  imageUrl: coverUrl,
+                  imageUrl: widget.coverUrl,
                   fit: BoxFit.cover,
                   width: double.infinity,
-                  placeholder: (_, __) =>
-                      Container(color: Colors.grey[200]),
+                  placeholder: (_, __) => Container(color: Colors.grey[200]),
                   errorWidget: (_, __, ___) =>
                       const Icon(Icons.broken_image, size: 40, color: Colors.grey),
                 ),
               ),
             ),
 
-            // ชื่อหนังสือ
+            // ชื่อ
             Padding(
               padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
               child: Text(
-                title,
+                widget.title,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
-                ),
+                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
               ),
             ),
 
@@ -76,40 +227,56 @@ class BookGrid extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               child: Text(
                 '฿${priceValue.toStringAsFixed(0)}',
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.green,
-                ),
+                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
               ),
             ),
 
-            // ปุ่ม “ถูกใจ” และ “ใส่ตะกร้า”
+            // ปุ่ม
             Padding(
               padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
               child: Row(
                 children: [
+                  // ถูกใจ
                   Expanded(
                     child: OutlinedButton.icon(
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 8),
                         visualDensity: VisualDensity.compact,
                         minimumSize: const Size(0, 36),
+                        side: BorderSide(
+                          color: isFavorite ? Colors.redAccent : Colors.grey.shade400,
+                        ),
                       ),
-                      icon: const Icon(Icons.favorite_border, size: 18),
-                      label: const Text('ถูกใจ'),
-                      onPressed: () => _onFavorite(context),
+                      icon: Icon(
+                        isFavorite ? Icons.favorite : Icons.favorite_border,
+                        color: isFavorite ? Colors.redAccent : Colors.black54,
+                        size: 18,
+                      ),
+                      label: Text(
+                        isFavorite ? 'ถูกใจแล้ว' : 'ถูกใจ',
+                        style: TextStyle(
+                          color: isFavorite ? Colors.redAccent : Colors.black87,
+                        ),
+                      ),
+                      onPressed: () => _toggleFavorite(context),
                     ),
                   ),
                   const SizedBox(width: 8),
+
+                  // ตะกร้า
                   Expanded(
                     child: FilledButton.icon(
                       style: FilledButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 8),
                         visualDensity: VisualDensity.compact,
                         minimumSize: const Size(0, 36),
+                        backgroundColor: isInCart ? Colors.orange : null,
                       ),
-                      icon: const Icon(Icons.add_shopping_cart, size: 18),
-                      label: const Text('ใส่ตะกร้า'),
+                      icon: Icon(
+                        isInCart ? Icons.shopping_cart : Icons.add_shopping_cart,
+                        size: 18,
+                      ),
+                      label: Text(isInCart ? 'อยู่ในตะกร้าแล้ว' : 'ใส่ตะกร้า'),
                       onPressed: () => _onAddToCart(context),
                     ),
                   ),
@@ -120,61 +287,5 @@ class BookGrid extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  // ❤️ ฟังก์ชันบันทึกรายการโปรด
-  Future<void> _onFavorite(BuildContext context) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      await showDialog(
-        context: context,
-        builder: (_) => const LoginRequiredDialog(),
-      );
-      return;
-    }
-
-    await FirebaseFirestore.instance
-        .collection('users')
-        .doc(user.uid)
-        .collection('favorites')
-        .doc(bookId)
-        .set({'createdAt': FieldValue.serverTimestamp()});
-
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('บันทึกรายการโปรดแล้ว')),
-      );
-    }
-  }
-
-  // 🛒 ฟังก์ชันเพิ่มลงตะกร้า
-  Future<void> _onAddToCart(BuildContext context) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      await showDialog(
-        context: context,
-        builder: (_) => const LoginRequiredDialog(),
-      );
-      return;
-    }
-
-    final ref = FirebaseFirestore.instance
-        .collection('carts')
-        .doc(user.uid)
-        .collection('items')
-        .doc(bookId);
-
-    await ref.set({
-      'title': title,
-      'price': _priceAsDouble(price),
-      'coverUrl': coverUrl,
-      'qty': FieldValue.increment(1),
-    }, SetOptions(merge: true));
-
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('เพิ่มลงตะกร้าแล้ว')),
-      );
-    }
   }
 }

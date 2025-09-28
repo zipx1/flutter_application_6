@@ -6,8 +6,8 @@ class LoginRequiredDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Icon(Icons.error_outline, size: 48, color: Colors.orange),
-      content: const Text('กรุณาล็อกอินก่อนใช้งานฟังก์ชันนี้ด้วยจ้า'),
+      title: const Icon(Icons.error_outline, size: 48, color: Color.fromARGB(255, 255, 152, 0)),
+      content: const Text('กรุณาล็อกอินก่อนทำการสั่งซื้อด้วยงั้บ'),
       actions: [
         FilledButton(
           onPressed: () {

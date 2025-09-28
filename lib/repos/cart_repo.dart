@@ -2,34 +2,42 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class CartRepo {
   final String uid;
-  CartRepo(this.uid);
+  late final CollectionReference<Map<String, dynamic>> _itemsCol;
 
-  CollectionReference<Map<String, dynamic>> get _col =>
-      FirebaseFirestore.instance.collection('users').doc(uid).collection('cart');
+  CartRepo(this.uid) {
+    _itemsCol = FirebaseFirestore.instance
+        .collection('carts')
+        .doc(uid)
+        .collection('items');
+  }
 
   Stream<List<Map<String, dynamic>>> itemsStream() {
-    return _col.snapshots().map(
-          (s) => s.docs.map((d) => {'id': d.id, ...d.data()}).toList(),
-        );
+    return _itemsCol.snapshots().map((snap) {
+      return snap.docs.map((doc) {
+        final d = doc.data();
+        return {
+          'id': doc.id,
+          'title': (d['title'] ?? '').toString(),
+          'coverUrl': (d['coverUrl'] ?? '').toString(),
+          'price': d['price'] is num
+              ? (d['price'] as num).toDouble()
+              : double.tryParse('${d['price']}') ?? 0.0,
+          'qty': d['qty'] is num
+              ? (d['qty'] as num).toInt()
+              : int.tryParse('${d['qty']}') ?? 0,
+        };
+      }).toList();
+    });
   }
 
-  Future<void> add(Map<String, dynamic> item) async {
-    final id = (item['id'] ?? '').toString();
-    await _col.doc(id).set({
-      'title': item['title'],
-      'price': item['price'],
-      'coverUrl': item['coverUrl'],
-      'qty': (item['qty'] ?? 1) as int,
-    }, SetOptions(merge: true));
+  Future<void> changeQty(String id, int newQty) async {
+    await _itemsCol.doc(id).update({
+      'qty': newQty,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
   }
 
-  Future<void> changeQty(String id, int qty) async {
-    if (qty <= 0) {
-      await remove(id);
-    } else {
-      await _col.doc(id).update({'qty': qty});
-    }
+  Future<void> remove(String id) async {
+    await _itemsCol.doc(id).delete();
   }
-
-  Future<void> remove(String id) => _col.doc(id).delete();
 }

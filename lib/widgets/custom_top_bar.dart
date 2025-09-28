@@ -1,6 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import '../utils/app_theme.dart'; // สำหรับ toggleTheme()
+import '../utils/app_theme.dart'; // isDarkMode / toggleTheme
 
 class CustomTopBar extends StatelessWidget implements PreferredSizeWidget {
   const CustomTopBar({super.key});
@@ -12,7 +12,6 @@ class CustomTopBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        // กำหนด leadingWidth อิงขนาดหน้าจอ
         final leadingW = constraints.maxWidth < 600 ? 180.0 : 260.0;
 
         return AppBar(
@@ -21,7 +20,7 @@ class CustomTopBar extends StatelessWidget implements PreferredSizeWidget {
           centerTitle: true,
           leadingWidth: leadingW,
 
-          // ✅ ชื่อร้านตรงกลางแน่นอน
+          // ชื่อร้านกลางเสมอ
           title: const FittedBox(
             fit: BoxFit.scaleDown,
             child: Text(
@@ -34,7 +33,7 @@ class CustomTopBar extends StatelessWidget implements PreferredSizeWidget {
             ),
           ),
 
-          // ✅ ฝั่งซ้าย (ล็อกอิน + ปุ่มโหมดกลางคืน)
+          // ซ้าย: ผู้ใช้ + โหมดมืด
           leading: Row(
             mainAxisSize: MainAxisSize.min,
             children: const [
@@ -45,15 +44,15 @@ class CustomTopBar extends StatelessWidget implements PreferredSizeWidget {
             ],
           ),
 
-          // ✅ ฝั่งขวา (หัวใจ + ตะกร้า)
+          // ขวา: ที่ชอบ + ตะกร้า
           actions: [
             _iconBox(
               icon: Icons.favorite_border,
-              onPressed: () => Navigator.pushNamed(context, '/favorites'),
+              onPressed: () => _pushNamedRoot(context, '/favorites'),
             ),
             _iconBox(
               icon: Icons.shopping_cart_outlined,
-              onPressed: () => Navigator.pushNamed(context, '/cart'),
+              onPressed: () => _pushNamedRoot(context, '/cart'),
             ),
             const SizedBox(width: 6),
           ],
@@ -62,7 +61,10 @@ class CustomTopBar extends StatelessWidget implements PreferredSizeWidget {
     );
   }
 
-  static Widget _iconBox({required IconData icon, required VoidCallback onPressed}) {
+  static Widget _iconBox({
+    required IconData icon,
+    required VoidCallback onPressed,
+  }) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 3, vertical: 6),
       decoration: BoxDecoration(
@@ -75,9 +77,14 @@ class CustomTopBar extends StatelessWidget implements PreferredSizeWidget {
       ),
     );
   }
+
+  /// ใช้ rootNavigator เสมอ เพื่อให้เรียกจากเมนู/บอททอมชีตได้ชัวร์
+  static Future<T?> _pushNamedRoot<T>(BuildContext context, String route) {
+    return Navigator.of(context, rootNavigator: true).pushNamed<T>(route);
+  }
 }
 
-// ✅ ปุ่มผู้ใช้
+// -------------------- ปุ่มผู้ใช้ --------------------
 class _UserButton extends StatelessWidget {
   const _UserButton();
 
@@ -88,7 +95,6 @@ class _UserButton extends StatelessWidget {
       builder: (context, snap) {
         final user = snap.data;
 
-        // ยังไม่ล็อกอิน
         if (user == null) {
           return ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -99,12 +105,8 @@ class _UserButton extends StatelessWidget {
               visualDensity: VisualDensity.compact,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
-            onPressed: () => Navigator.pushNamed(context, '/login'),
-            child: const Text(
-              'ล็อกอิน',
-              style: TextStyle(fontSize: 13),
-              overflow: TextOverflow.ellipsis,
-            ),
+            onPressed: () => Navigator.of(context, rootNavigator: true).pushNamed('/login'),
+            child: const Text('ล็อกอิน', style: TextStyle(fontSize: 13)),
           );
         }
 
@@ -120,20 +122,21 @@ class _UserButton extends StatelessWidget {
   }
 
   Future<void> _showProfileMenu(BuildContext context, User user) async {
-    final overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
-    final box = context.findRenderObject() as RenderBox?;
-    final topLeft = box?.localToGlobal(Offset.zero) ?? Offset.zero;
+    // คำนวณตำแหน่งเมนูให้ค่อนข้างเสถียร
+    final overlayBox = Overlay.maybeOf(context)?.context.findRenderObject() as RenderBox?;
+    final selfBox = context.findRenderObject() as RenderBox?;
+    final topLeft = selfBox?.localToGlobal(Offset.zero) ?? const Offset(0, kToolbarHeight);
 
-    final rect = RelativeRect.fromLTRB(
+    final pos = RelativeRect.fromLTRB(
       topLeft.dx,
-      topLeft.dy + (box?.size.height ?? 0),
-      overlay.size.width - topLeft.dx,
+      topLeft.dy + (selfBox?.size.height ?? 40),
+      (overlayBox?.size.width ?? MediaQuery.sizeOf(context).width) - topLeft.dx,
       0,
     );
 
     await showMenu(
       context: context,
-      position: rect,
+      position: pos,
       elevation: 6,
       color: Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -142,7 +145,7 @@ class _UserButton extends StatelessWidget {
           enabled: false,
           padding: EdgeInsets.zero,
           child: SizedBox(
-            width: 280,
+            width: 300,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -170,14 +173,9 @@ class _UserButton extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              user.displayName?.isNotEmpty == true
-                                  ? user.displayName!
-                                  : 'บัญชีผู้ใช้',
+                              user.displayName?.isNotEmpty == true ? user.displayName! : 'บัญชีผู้ใช้',
                               style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 15,
-                              ),
+                                color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
                               overflow: TextOverflow.ellipsis,
                             ),
                             Text(
@@ -193,7 +191,8 @@ class _UserButton extends StatelessWidget {
                           Navigator.pop(context);
                           await FirebaseAuth.instance.signOut();
                           if (context.mounted) {
-                            Navigator.pushReplacementNamed(context, '/login');
+                            Navigator.of(context, rootNavigator: true)
+                                .pushNamedAndRemoveUntil('/home', (r) => false);
                           }
                         },
                         style: TextButton.styleFrom(
@@ -216,15 +215,46 @@ class _UserButton extends StatelessWidget {
                   title: const Text('ข้อมูลของฉัน'),
                   onTap: () {
                     Navigator.pop(context);
-                    Navigator.pushNamed(context, '/profile');
+                    Navigator.of(context, rootNavigator: true).pushNamed('/profile');
                   },
                 ),
                 ListTile(
                   leading: const Icon(Icons.location_on_outlined),
-                  title: const Text('เพิ่มที่อยู่'),
+                  title: const Text('ที่อยู่จัดส่ง'),
                   onTap: () {
                     Navigator.pop(context);
-                    Navigator.pushNamed(context, '/address');
+                    showModalBottomSheet(
+                      context: context,
+                      useRootNavigator: true, // ← ให้ขึ้นกับ root navigator
+                      showDragHandle: true,
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                      ),
+                      builder: (sheetCtx) => Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            ListTile(
+                              leading: const Icon(Icons.add_location_alt_outlined),
+                              title: const Text('เพิ่มที่อยู่ใหม่'),
+                              onTap: () {
+                                Navigator.pop(sheetCtx);
+                                Navigator.of(context, rootNavigator: true).pushNamed('/add_address');
+                              },
+                            ),
+                            ListTile(
+                              leading: const Icon(Icons.location_on),
+                              title: const Text('เลือก/แก้ไขที่อยู่เดิม'),
+                              onTap: () {
+                                Navigator.pop(sheetCtx);
+                                Navigator.of(context, rootNavigator: true).pushNamed('/select_address');
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
                   },
                 ),
               ],
@@ -236,7 +266,7 @@ class _UserButton extends StatelessWidget {
   }
 }
 
-// ✅ pill ทักทายผู้ใช้
+// -------------------- pill ทักทาย --------------------
 class _GreetingPill extends StatelessWidget {
   final String text;
   final VoidCallback onTap;
@@ -279,7 +309,7 @@ class _GreetingPill extends StatelessWidget {
   }
 }
 
-// ✅ ปุ่มโหมดกลางคืน
+// -------------------- ปุ่มโหมดกลางคืน --------------------
 class _ThemeToggleButton extends StatelessWidget {
   const _ThemeToggleButton();
 
