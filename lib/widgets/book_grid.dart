@@ -119,7 +119,7 @@ class _BookGridState extends State<BookGrid> {
       if (!mounted) return;
       setState(() => isFavorite = true);
       _toast(context, 'เพิ่มในรายการโปรดแล้ว',
-          color: Colors.green, icon: Icons.favorite);
+          color: const Color.fromARGB(255, 0, 0, 0), icon: Icons.favorite);
     }
   }
 
@@ -180,11 +180,14 @@ class _BookGridState extends State<BookGrid> {
   @override
   Widget build(BuildContext context) {
     final priceValue = _priceAsDouble(widget.price);
+    // 💡 ดึงสีข้อความหลักจากธีม
+    final bodyTextColor = Theme.of(context).textTheme.bodyLarge?.color; 
 
     return Card(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey.shade300, width: 1),
+        // ใช้สีขอบที่เข้ากับธีม
+        side: BorderSide(color: Theme.of(context).dividerColor, width: 1), 
       ),
       elevation: 0,
       clipBehavior: Clip.antiAlias,
@@ -211,18 +214,22 @@ class _BookGridState extends State<BookGrid> {
               ),
             ),
 
-            // ชื่อ
+            // ชื่อ (💡 แก้ไข: ใช้ bodyTextColor)
             Padding(
               padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
               child: Text(
                 widget.title,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                style: TextStyle(
+                  fontWeight: FontWeight.w600, 
+                  fontSize: 14,
+                  color: bodyTextColor, // 💡 ใช้สีที่เปลี่ยนตามธีม
+                ),
               ),
             ),
 
-            // ราคา
+            // ราคา (สีเขียวปกติมักจะอ่านได้ทั้งสองธีม)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               child: Text(
@@ -244,18 +251,25 @@ class _BookGridState extends State<BookGrid> {
                         visualDensity: VisualDensity.compact,
                         minimumSize: const Size(0, 36),
                         side: BorderSide(
-                          color: isFavorite ? Colors.redAccent : Colors.grey.shade400,
+                          color: isFavorite 
+                              ? Colors.redAccent 
+                              : Theme.of(context).dividerColor, // 💡 ใช้สีที่เปลี่ยนตามธีม
                         ),
                       ),
                       icon: Icon(
                         isFavorite ? Icons.favorite : Icons.favorite_border,
-                        color: isFavorite ? Colors.redAccent : Colors.black54,
+                        
+                        color: isFavorite 
+                            ? Colors.redAccent
+                            : bodyTextColor, // 💡 ใช้สีที่เปลี่ยนตามธีม
                         size: 18,
                       ),
                       label: Text(
                         isFavorite ? 'ถูกใจแล้ว' : 'ถูกใจ',
                         style: TextStyle(
-                          color: isFavorite ? Colors.redAccent : Colors.black87,
+                          color: isFavorite 
+                              ? Colors.redAccent 
+                              : bodyTextColor, // 💡 ใช้สีที่เปลี่ยนตามธีม
                         ),
                       ),
                       onPressed: () => _toggleFavorite(context),
@@ -270,7 +284,7 @@ class _BookGridState extends State<BookGrid> {
                         padding: const EdgeInsets.symmetric(vertical: 8),
                         visualDensity: VisualDensity.compact,
                         minimumSize: const Size(0, 36),
-                        backgroundColor: isInCart ? Colors.orange : null,
+                        backgroundColor: isInCart ? Colors.orange : Theme.of(context).colorScheme.primary, // ใช้สี primary ของธีม
                       ),
                       icon: Icon(
                         isInCart ? Icons.shopping_cart : Icons.add_shopping_cart,

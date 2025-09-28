@@ -20,7 +20,7 @@ class FavoritesPage extends StatelessWidget {
         ],
       ),
       duration: Duration(seconds: seconds),
-      backgroundColor: color ?? Colors.black87,
+      backgroundColor: color ?? const Color.fromARGB(221, 0, 0, 0),
       behavior: SnackBarBehavior.floating,
       margin: const EdgeInsets.all(12),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -45,7 +45,7 @@ class FavoritesPage extends StatelessWidget {
         if (user == null) {
           return Scaffold(
             appBar: AppBar(
-              backgroundColor: Colors.green.shade700,
+              backgroundColor: const Color.fromARGB(255, 0, 0, 0),
               title: const Text('ที่กดใจไว้'),
             ),
             body: Center(
@@ -62,10 +62,10 @@ class FavoritesPage extends StatelessWidget {
         final bookRepo = BookRepo();
 
         return Scaffold(
-          backgroundColor: Colors.grey.shade50,
+          backgroundColor: const Color.fromARGB(255, 255, 255, 255),
           appBar: AppBar(
             title: const Text('ที่กดใจไว้'),
-            backgroundColor: Colors.green.shade700,
+            backgroundColor: const Color.fromARGB(255, 255, 191, 0),
             foregroundColor: Colors.white,
           ),
           body: StreamBuilder<Set<String>>(
@@ -113,7 +113,7 @@ class FavoritesPage extends StatelessWidget {
                             FilledButton(
                               style: FilledButton.styleFrom(
                                 backgroundColor: Colors.indigo.shade100,
-                                foregroundColor: Colors.indigo.shade900,
+                                foregroundColor: const Color.fromARGB(255, 0, 0, 0),
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 24, vertical: 12),
                                 shape: RoundedRectangleBorder(

@@ -19,7 +19,7 @@ class CartPage extends StatelessWidget {
         ],
       ),
       duration: Duration(seconds: seconds),
-      backgroundColor: color ?? Colors.black87,
+      backgroundColor: color ?? const Color.fromARGB(221, 255, 200, 0),
       behavior: SnackBarBehavior.floating,
       margin: const EdgeInsets.all(12),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -44,7 +44,7 @@ class CartPage extends StatelessWidget {
             backgroundColor: Colors.grey.shade50,
             appBar: AppBar(
               title: const Text('ตะกร้า'),
-              backgroundColor: Colors.green.shade700,
+              backgroundColor: const Color.fromARGB(255, 255, 208, 0),
               foregroundColor: Colors.white,
               elevation: 0,
             ),
@@ -63,7 +63,7 @@ class CartPage extends StatelessWidget {
           backgroundColor: Colors.grey.shade50,
           appBar: AppBar(
             title: const Text('ตะกร้า'),
-            backgroundColor: Colors.green.shade700,
+            backgroundColor: const Color.fromARGB(255, 255, 208, 0),
             foregroundColor: Colors.white,
             elevation: 0,
           ),
@@ -198,7 +198,7 @@ class CartPage extends StatelessWidget {
                                     onPressed: () async {
                                       await repo.changeQty(id, qty + 1);
                                       _toast(context, 'เพิ่มจำนวน +1',
-                                          color: Colors.indigo,
+                                          color: const Color.fromARGB(255, 236, 185, 0),
                                           icon: Icons.add_circle_outline);
                                     },
                                     icon: const Icon(Icons.add_circle_outline),

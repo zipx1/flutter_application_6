@@ -15,7 +15,7 @@ class CustomTopBar extends StatelessWidget implements PreferredSizeWidget {
         final leadingW = constraints.maxWidth < 600 ? 180.0 : 260.0;
 
         return AppBar(
-          backgroundColor: const Color(0xFF2E7D32),
+          backgroundColor: const Color.fromARGB(255, 255, 191, 0),
           elevation: 0,
           centerTitle: true,
           leadingWidth: leadingW,
@@ -68,11 +68,11 @@ class CustomTopBar extends StatelessWidget implements PreferredSizeWidget {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 3, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.15),
+        color: const Color.fromARGB(255, 255, 255, 255).withOpacity(0.15),
         borderRadius: BorderRadius.circular(8),
       ),
       child: IconButton(
-        icon: Icon(icon, color: Colors.white, size: 22),
+        icon: Icon(icon, color: const Color.fromARGB(255, 255, 255, 255), size: 22),
         onPressed: onPressed,
       ),
     );
@@ -98,7 +98,7 @@ class _UserButton extends StatelessWidget {
         if (user == null) {
           return ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF43A047),
+              backgroundColor: const Color.fromARGB(255, 0, 0, 0),
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               minimumSize: const Size(0, 36),
@@ -155,7 +155,7 @@ class _UserButton extends StatelessWidget {
                   decoration: const BoxDecoration(
                     borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
                     gradient: LinearGradient(
-                      colors: [Color(0xFF43A047), Color(0xFF2E7D32)],
+                      colors: [Color.fromARGB(255, 255, 221, 0), Color.fromARGB(255, 255, 221, 0)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -175,12 +175,12 @@ class _UserButton extends StatelessWidget {
                             Text(
                               user.displayName?.isNotEmpty == true ? user.displayName! : 'บัญชีผู้ใช้',
                               style: const TextStyle(
-                                color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                                color: Color.fromARGB(255, 255, 255, 255), fontWeight: FontWeight.bold, fontSize: 15),
                               overflow: TextOverflow.ellipsis,
                             ),
                             Text(
                               user.email ?? 'gg-${user.uid}',
-                              style: const TextStyle(color: Colors.white, fontSize: 12),
+                              style: const TextStyle(color: Color.fromARGB(255, 255, 255, 255), fontSize: 12),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ],
@@ -196,10 +196,10 @@ class _UserButton extends StatelessWidget {
                           }
                         },
                         style: TextButton.styleFrom(
-                          foregroundColor: Colors.white,
+                          foregroundColor: const Color.fromARGB(255, 255, 255, 255),
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                           shape: RoundedRectangleBorder(
-                            side: const BorderSide(color: Colors.white),
+                            side: const BorderSide(color: Color.fromARGB(255, 255, 255, 255)),
                             borderRadius: BorderRadius.circular(20),
                           ),
                         ),
@@ -213,6 +213,7 @@ class _UserButton extends StatelessWidget {
                 ListTile(
                   leading: const Icon(Icons.person_outline),
                   title: const Text('ข้อมูลของฉัน'),
+                  textColor: Colors.black87,
                   onTap: () {
                     Navigator.pop(context);
                     Navigator.of(context, rootNavigator: true).pushNamed('/profile');
@@ -221,6 +222,7 @@ class _UserButton extends StatelessWidget {
                 ListTile(
                   leading: const Icon(Icons.location_on_outlined),
                   title: const Text('ที่อยู่จัดส่ง'),
+                  textColor: Colors.black87,
                   onTap: () {
                     Navigator.pop(context);
                     showModalBottomSheet(
@@ -281,7 +283,7 @@ class _GreetingPill extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(8),
           gradient: const LinearGradient(
-            colors: [Color(0xFF43A047), Color(0xFF2E7D32)],
+            colors: [Color.fromARGB(255, 0, 0, 0), Color.fromARGB(255, 0, 0, 0)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),

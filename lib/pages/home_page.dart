@@ -22,7 +22,7 @@ class HomePage extends StatelessWidget {
         .snapshots();
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      // 💡 แก้ไข: ลบ backgroundColor ออกเพื่อให้ใช้สีพื้นหลังของธีม (ขาว/ดำ)
       appBar: const CustomTopBar(),
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
         stream: booksStream,
@@ -31,10 +31,12 @@ class HomePage extends StatelessWidget {
             return const Center(child: CircularProgressIndicator());
           }
           if (!snap.hasData || snap.data!.docs.isEmpty) {
-            return const Center(child: Text('ยังไม่มีหนังสือ'));
+            // 💡 แก้ไข: ใช้สีข้อความหลักจากธีม
+            return Center(child: Text('ยังไม่มีหนังสือ', style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color)));
           }
 
           final docs = snap.data!.docs;
+          final titleColor = Theme.of(context).textTheme.titleLarge?.color; // 💡 ดึงสีหัวข้อ
 
           return LayoutBuilder(
             builder: (context, constraints) {
@@ -50,10 +52,11 @@ class HomePage extends StatelessWidget {
                       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: const [
+                        children: [
                           Text(
                             '📚 สินค้าขายดี',
                             style: TextStyle(
+                              color: titleColor, // 💡 ใช้สีที่เปลี่ยนตามธีม
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                             ),
@@ -77,8 +80,10 @@ class HomePage extends StatelessWidget {
                           }
                           if (!bestSnap.hasData ||
                               bestSnap.data!.docs.isEmpty) {
-                            return const Center(
-                                child: Text('ยังไม่มีสินค้าขายดี'));
+                            // 💡 แก้ไข: ใช้สีข้อความหลักจากธีม
+                            return Center(
+                                child: Text('ยังไม่มีสินค้าขายดี',
+                                    style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color)));
                           }
 
                           final bestDocs = bestSnap.data!.docs;
@@ -110,7 +115,8 @@ class HomePage extends StatelessWidget {
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 8),
-                      child: Divider(color: Colors.grey.shade300, height: 1),
+                      // 💡 ใช้ Divider ที่เปลี่ยนสีตามธีม
+                      child: Divider(color: Theme.of(context).dividerColor, height: 1), 
                     ),
                   ),
 
@@ -119,10 +125,11 @@ class HomePage extends StatelessWidget {
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
                       child: Row(
-                        children: const [
+                        children: [
                           Text(
                             'หนังสือทั้งหมด',
                             style: TextStyle(
+                              color: titleColor, // 💡 ใช้สีที่เปลี่ยนตามธีม
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                             ),
@@ -184,6 +191,9 @@ class _BestSellerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 💡 ดึงสีข้อความหลักจากธีม
+    final bodyTextColor = Theme.of(context).textTheme.bodyLarge?.color; 
+
     return SizedBox(
       width: 160,
       child: Card(
@@ -220,18 +230,20 @@ class _BestSellerCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // 💡 แก้ไข: ใช้ bodyTextColor
                     Text(
                       title,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       softWrap: true,
-                      style: const TextStyle(fontWeight: FontWeight.w600),
+                      style: TextStyle(fontWeight: FontWeight.w600, color: bodyTextColor), 
                     ),
                     const SizedBox(height: 4),
+                    // 💡 แก้ไข: ราคายังคงใช้สีเขียวคงที่ (อ่านง่าย)
                     Text(
                       '฿${price.toStringAsFixed(0)}',
-                      style: TextStyle(
-                        color: Colors.green.shade700,
+                      style: const TextStyle( 
+                        color: Color.fromARGB(255, 37, 185, 0), // ราคามักจะใช้สีคงที่ เช่น สีเขียว
                         fontWeight: FontWeight.bold,
                       ),
                     ),

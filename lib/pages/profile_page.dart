@@ -100,7 +100,7 @@ class _ProfilePageState extends State<ProfilePage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('ข้อมูลของฉัน'),
-        backgroundColor: Colors.green,
+        backgroundColor: const Color.fromARGB(255, 255, 204, 0),
       ),
       body: user == null
           ? Center(
@@ -119,8 +119,8 @@ class _ProfilePageState extends State<ProfilePage> {
                     children: [
                       CircleAvatar(
                         radius: 36,
-                        backgroundColor: Colors.green.shade300,
-                        child: const Icon(Icons.person, color: Colors.white, size: 36),
+                        backgroundColor: const Color.fromARGB(255, 255, 230, 0),
+                        child: const Icon(Icons.person, color: Color.fromARGB(255, 255, 255, 255), size: 36),
                       ),
                       const SizedBox(width: 16),
                       Expanded(

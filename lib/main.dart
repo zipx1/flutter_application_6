@@ -48,12 +48,12 @@ class MyApp extends StatelessWidget {
           themeMode: mode,
           theme: ThemeData(
             useMaterial3: true,
-            colorSchemeSeed: Colors.indigo,
+            colorSchemeSeed: const Color.fromARGB(255, 239, 203, 0),
             brightness: Brightness.light,
           ),
           darkTheme: ThemeData(
             useMaterial3: true,
-            colorSchemeSeed: Colors.indigo,
+            colorSchemeSeed: const Color.fromARGB(255, 239, 203, 0),
             brightness: Brightness.dark,
           ),
 

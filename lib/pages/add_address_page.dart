@@ -140,6 +140,8 @@ class _AddAddressPageState extends State<AddAddressPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('เพิ่มที่อยู่ใหม่'),
+        backgroundColor: const Color.fromARGB(255, 255, 187, 0),
+        foregroundColor: Colors.white,
       ),
       body: LayoutBuilder(
         builder: (context, c) {
