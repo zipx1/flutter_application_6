@@ -46,6 +46,7 @@ class FavoritesPage extends StatelessWidget {
           return Scaffold(
             appBar: AppBar(
               backgroundColor: const Color.fromARGB(255, 0, 0, 0),
+              foregroundColor: Colors.white, // ✅ ทำให้ข้อความ/ไอคอนเป็นสีขาว
               title: const Text('ที่กดใจไว้'),
             ),
             body: Center(
@@ -66,7 +67,7 @@ class FavoritesPage extends StatelessWidget {
           appBar: AppBar(
             title: const Text('ที่กดใจไว้'),
             backgroundColor: const Color.fromARGB(255, 255, 191, 0),
-            foregroundColor: Colors.white,
+            foregroundColor: Colors.white, // ถ้าอยากให้ตัดกับเหลืองชัดขึ้น เปลี่ยนเป็น Colors.black
           ),
           body: StreamBuilder<Set<String>>(
             stream: favRepo.idsStream(),
@@ -89,7 +90,7 @@ class FavoritesPage extends StatelessWidget {
                       .where((b) => favIds.contains((b['id'] ?? '') as String))
                       .toList();
 
-                  // ✅ ถ้าไม่มีเล่มโปรด แสดงตรงกลาง
+                  // ✅ ถ้าไม่มีเล่มโปรด แสดงข้อความกลางจอ
                   if (books.isEmpty) {
                     return Center(
                       child: Padding(
@@ -174,8 +175,7 @@ class FavoritesPage extends StatelessWidget {
                         subtitle: Text('฿${price.toStringAsFixed(0)}'),
                         trailing: IconButton(
                           tooltip: 'เอาออกจากที่กดใจ',
-                          icon:
-                              const Icon(Icons.favorite, color: Colors.redAccent),
+                          icon: const Icon(Icons.favorite, color: Colors.redAccent),
                           onPressed: () async {
                             await favRepo.toggle(id, true);
                             _toast(

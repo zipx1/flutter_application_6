@@ -1,8 +1,8 @@
+// lib/widgets/book_grid.dart
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-
 import 'login_required_dialog.dart';
 
 class BookGrid extends StatefulWidget {
@@ -37,7 +37,7 @@ class _BookGridState extends State<BookGrid> {
   double _priceAsDouble(dynamic v) =>
       v is num ? v.toDouble() : double.tryParse(v?.toString() ?? '') ?? 0.0;
 
-  // ---------- Toast (SnackBar ลอย) ----------
+  // ---------- Toast ----------
   void _toast(BuildContext context, String msg,
       {Color? color, IconData? icon, int seconds = 2}) {
     final bar = SnackBar(
@@ -91,7 +91,10 @@ class _BookGridState extends State<BookGrid> {
   Future<void> _toggleFavorite(BuildContext context) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      await showDialog(context: context, builder: (_) => const LoginRequiredDialog());
+      await showDialog(
+        context: context,
+        builder: (_) => const LoginRequiredDialog(),
+      );
       return;
     }
 
@@ -109,7 +112,6 @@ class _BookGridState extends State<BookGrid> {
       _toast(context, 'ลบออกจากรายการโปรดแล้ว',
           color: Colors.redAccent, icon: Icons.favorite_border);
     } else {
-      // ✅ เก็บข้อมูลให้ครบ เพื่อให้หน้า favorites แสดงได้เลย
       await favRef.set({
         'title': widget.title,
         'price': _priceAsDouble(widget.price),
@@ -119,15 +121,18 @@ class _BookGridState extends State<BookGrid> {
       if (!mounted) return;
       setState(() => isFavorite = true);
       _toast(context, 'เพิ่มในรายการโปรดแล้ว',
-          color: const Color.fromARGB(255, 0, 0, 0), icon: Icons.favorite);
+          color: const Color.fromARGB(255, 102, 255, 0), icon: Icons.favorite);
     }
   }
 
-  // ---------- เพิ่มลงตะกร้า (ใช้ Transaction) ----------
+  // ---------- เพิ่มลงตะกร้า ----------
   Future<void> _onAddToCart(BuildContext context) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      await showDialog(context: context, builder: (_) => const LoginRequiredDialog());
+      await showDialog(
+        context: context,
+        builder: (_) => const LoginRequiredDialog(),
+      );
       return;
     }
 
@@ -137,7 +142,7 @@ class _BookGridState extends State<BookGrid> {
         .collection('items')
         .doc(widget.bookId);
 
-    bool existed = false; // ✅ จำสถานะก่อนอัปเดต เพื่อใช้แสดงข้อความให้ถูก
+    bool existed = false;
     try {
       await FirebaseFirestore.instance.runTransaction((tx) async {
         final snap = await tx.get(itemRef);
@@ -167,7 +172,7 @@ class _BookGridState extends State<BookGrid> {
       _toast(
         context,
         existed ? 'เพิ่มจำนวน +1' : 'เพิ่มลงตะกร้าแล้ว',
-        color: existed ? Colors.orange : Colors.indigo,
+        color: existed ? Colors.orange : const Color.fromARGB(255, 0, 195, 255),
         icon: Icons.add_shopping_cart,
       );
     } catch (e) {
@@ -180,23 +185,25 @@ class _BookGridState extends State<BookGrid> {
   @override
   Widget build(BuildContext context) {
     final priceValue = _priceAsDouble(widget.price);
-    // 💡 ดึงสีข้อความหลักจากธีม
-    final bodyTextColor = Theme.of(context).textTheme.bodyLarge?.color; 
+    final bodyTextColor = Theme.of(context).textTheme.bodyLarge?.color;
 
     return Card(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        // ใช้สีขอบที่เข้ากับธีม
-        side: BorderSide(color: Theme.of(context).dividerColor, width: 1), 
+        side: BorderSide(color: Theme.of(context).dividerColor, width: 1),
       ),
       elevation: 0,
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => Navigator.pushNamed(context, '/bookDetail', arguments: widget.bookId),
+        onTap: () => Navigator.pushNamed(
+          context,
+          '/bookDetail',
+          arguments: widget.bookId,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ปก
+            // รูปปก
             Expanded(
               child: ClipRRect(
                 borderRadius: const BorderRadius.only(
@@ -208,13 +215,13 @@ class _BookGridState extends State<BookGrid> {
                   fit: BoxFit.cover,
                   width: double.infinity,
                   placeholder: (_, __) => Container(color: Colors.grey[200]),
-                  errorWidget: (_, __, ___) =>
-                      const Icon(Icons.broken_image, size: 40, color: Colors.grey),
+                  errorWidget: (_, __, ___) => const Icon(Icons.broken_image,
+                      size: 40, color: Colors.grey),
                 ),
               ),
             ),
 
-            // ชื่อ (💡 แก้ไข: ใช้ bodyTextColor)
+            // ชื่อหนังสือ
             Padding(
               padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
               child: Text(
@@ -222,28 +229,29 @@ class _BookGridState extends State<BookGrid> {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontWeight: FontWeight.w600, 
+                  fontWeight: FontWeight.w600,
                   fontSize: 14,
-                  color: bodyTextColor, // 💡 ใช้สีที่เปลี่ยนตามธีม
+                  color: bodyTextColor,
                 ),
               ),
             ),
 
-            // ราคา (สีเขียวปกติมักจะอ่านได้ทั้งสองธีม)
+            // ราคา
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               child: Text(
                 '฿${priceValue.toStringAsFixed(0)}',
-                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
+                style: const TextStyle(
+                    fontWeight: FontWeight.bold, color: Colors.green),
               ),
             ),
 
-            // ปุ่ม
+            // ปุ่มกด
             Padding(
               padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
               child: Row(
                 children: [
-                  // ถูกใจ
+                  // ปุ่ม Favorite
                   Expanded(
                     child: OutlinedButton.icon(
                       style: OutlinedButton.styleFrom(
@@ -251,25 +259,21 @@ class _BookGridState extends State<BookGrid> {
                         visualDensity: VisualDensity.compact,
                         minimumSize: const Size(0, 36),
                         side: BorderSide(
-                          color: isFavorite 
-                              ? Colors.redAccent 
-                              : Theme.of(context).dividerColor, // 💡 ใช้สีที่เปลี่ยนตามธีม
+                          color: isFavorite
+                              ? Colors.redAccent
+                              : Theme.of(context).dividerColor,
                         ),
                       ),
                       icon: Icon(
                         isFavorite ? Icons.favorite : Icons.favorite_border,
-                        
-                        color: isFavorite 
-                            ? Colors.redAccent
-                            : bodyTextColor, // 💡 ใช้สีที่เปลี่ยนตามธีม
+                        color: isFavorite ? Colors.redAccent : bodyTextColor,
                         size: 18,
                       ),
                       label: Text(
                         isFavorite ? 'ถูกใจแล้ว' : 'ถูกใจ',
                         style: TextStyle(
-                          color: isFavorite 
-                              ? Colors.redAccent 
-                              : bodyTextColor, // 💡 ใช้สีที่เปลี่ยนตามธีม
+                          color:
+                              isFavorite ? Colors.redAccent : bodyTextColor,
                         ),
                       ),
                       onPressed: () => _toggleFavorite(context),
@@ -277,20 +281,26 @@ class _BookGridState extends State<BookGrid> {
                   ),
                   const SizedBox(width: 8),
 
-                  // ตะกร้า
+                  // ปุ่มตะกร้า
                   Expanded(
                     child: FilledButton.icon(
                       style: FilledButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 8),
                         visualDensity: VisualDensity.compact,
                         minimumSize: const Size(0, 36),
-                        backgroundColor: isInCart ? Colors.orange : Theme.of(context).colorScheme.primary, // ใช้สี primary ของธีม
+                        backgroundColor: isInCart
+                            ? Colors.orange
+                            : Theme.of(context).colorScheme.primary,
                       ),
                       icon: Icon(
-                        isInCart ? Icons.shopping_cart : Icons.add_shopping_cart,
+                        isInCart
+                            ? Icons.shopping_cart
+                            : Icons.add_shopping_cart,
                         size: 18,
                       ),
-                      label: Text(isInCart ? 'อยู่ในตะกร้าแล้ว' : 'ใส่ตะกร้า'),
+                      label: Text(
+                        isInCart ? 'อยู่ในตะกร้าแล้ว' : 'ใส่ตะกร้า',
+                      ),
                       onPressed: () => _onAddToCart(context),
                     ),
                   ),

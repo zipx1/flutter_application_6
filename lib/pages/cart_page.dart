@@ -8,18 +8,23 @@ class CartPage extends StatelessWidget {
 
   void _toast(BuildContext context, String msg,
       {Color? color, IconData? icon, int seconds = 2}) {
+    final bg = color ?? const Color.fromARGB(221, 255, 200, 0);
+    final onBg = ThemeData.estimateBrightnessForColor(bg) == Brightness.dark
+        ? Colors.white
+        : Colors.black;
+
     final bar = SnackBar(
       content: Row(
         children: [
           if (icon != null) ...[
-            Icon(icon, color: Colors.white),
+            Icon(icon, color: onBg),
             const SizedBox(width: 8),
           ],
-          Expanded(child: Text(msg)),
+          Expanded(child: Text(msg, style: TextStyle(color: onBg))),
         ],
       ),
       duration: Duration(seconds: seconds),
-      backgroundColor: color ?? const Color.fromARGB(221, 255, 200, 0),
+      backgroundColor: bg,
       behavior: SnackBarBehavior.floating,
       margin: const EdgeInsets.all(12),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -31,21 +36,29 @@ class CartPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? Colors.black : Colors.white;
+    final appBarColor =
+        isDark ? Colors.black : const Color.fromARGB(255, 255, 208, 0);
+    final appBarTextColor = isDark ? Colors.white : Colors.black;
+
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, authSnap) {
         if (authSnap.connectionState == ConnectionState.waiting) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
         }
 
         final user = authSnap.data;
         if (user == null) {
           return Scaffold(
-            backgroundColor: Colors.grey.shade50,
+            backgroundColor: bgColor,
             appBar: AppBar(
               title: const Text('ตะกร้า'),
-              backgroundColor: const Color.fromARGB(255, 255, 208, 0),
-              foregroundColor: Colors.white,
+              backgroundColor: appBarColor,
+              foregroundColor: appBarTextColor,
               elevation: 0,
             ),
             body: Center(
@@ -60,11 +73,11 @@ class CartPage extends StatelessWidget {
         final repo = CartRepo(user.uid);
 
         return Scaffold(
-          backgroundColor: Colors.grey.shade50,
+          backgroundColor: bgColor,
           appBar: AppBar(
             title: const Text('ตะกร้า'),
-            backgroundColor: const Color.fromARGB(255, 255, 208, 0),
-            foregroundColor: Colors.white,
+            backgroundColor: appBarColor,
+            foregroundColor: appBarTextColor,
             elevation: 0,
           ),
 
@@ -75,6 +88,7 @@ class CartPage extends StatelessWidget {
               if (snap.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
               }
+
               final items = snap.data ?? const <Map<String, dynamic>>[];
 
               // รวมยอด: ถ้า qty ไม่มี/เป็น 0 ให้ถือเป็น 1
@@ -88,7 +102,6 @@ class CartPage extends StatelessWidget {
               );
 
               if (items.isEmpty) {
-                // ===== Empty state กลางจอ =====
                 return Center(
                   child: Padding(
                     padding: const EdgeInsets.all(24),
@@ -98,12 +111,17 @@ class CartPage extends StatelessWidget {
                         Icon(Icons.shopping_cart_outlined,
                             size: 64, color: Colors.grey.shade400),
                         const SizedBox(height: 10),
-                        Text('ตะกร้ายังว่างอยู่',
-                            style: TextStyle(
-                                color: Colors.grey.shade600, fontSize: 16)),
+                        Text(
+                          'ตะกร้ายังว่างอยู่',
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 16,
+                          ),
+                        ),
                         const SizedBox(height: 16),
                         FilledButton.tonal(
-                          onPressed: () => Navigator.pushNamed(context, '/home'),
+                          onPressed: () =>
+                              Navigator.pushNamed(context, '/home'),
                           child: const Text('ไปเลือกหนังสือ'),
                         ),
                       ],
@@ -131,6 +149,7 @@ class CartPage extends StatelessWidget {
                         final line = price * qty;
 
                         return Card(
+                          color: isDark ? Colors.grey[900] : Colors.white,
                           elevation: 0,
                           margin: const EdgeInsets.symmetric(
                               horizontal: 12, vertical: 0),
@@ -155,18 +174,26 @@ class CartPage extends StatelessWidget {
                                       errorWidget: (_, __, ___) =>
                                           const Icon(Icons.broken_image),
                                     )
-                                  : const Icon(Icons.menu_book_outlined, size: 32),
+                                  : const Icon(Icons.menu_book_outlined,
+                                      size: 32),
                             ),
                             title: Text(
                               title.isEmpty ? 'ไม่มีชื่อ' : title,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: isDark ? Colors.white : Colors.black,
+                              ),
                             ),
                             subtitle: Padding(
                               padding: const EdgeInsets.only(top: 4),
                               child: Text(
                                 '฿${price.toStringAsFixed(0)} x $qty = ฿${line.toStringAsFixed(0)}',
-                                style: const TextStyle(fontWeight: FontWeight.w600),
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  color:
+                                      isDark ? Colors.grey[400] : Colors.black,
+                                ),
                               ),
                             ),
                             trailing: SizedBox(
@@ -192,13 +219,18 @@ class CartPage extends StatelessWidget {
                                     },
                                     icon: const Icon(Icons.remove_circle_outline),
                                   ),
-                                  Text('$qty'),
+                                  Text('$qty',
+                                      style: TextStyle(
+                                          color: isDark
+                                              ? Colors.white
+                                              : Colors.black)),
                                   IconButton(
                                     tooltip: 'เพิ่มจำนวน',
                                     onPressed: () async {
                                       await repo.changeQty(id, qty + 1);
                                       _toast(context, 'เพิ่มจำนวน +1',
-                                          color: const Color.fromARGB(255, 236, 185, 0),
+                                          color: const Color.fromARGB(
+                                              255, 236, 185, 0),
                                           icon: Icons.add_circle_outline);
                                     },
                                     icon: const Icon(Icons.add_circle_outline),
@@ -222,15 +254,15 @@ class CartPage extends StatelessWidget {
                     ),
                   ),
 
-                  // ===== สรุปยอด + ปุ่มไปชำระเงิน (sticky) =====
+                  // ===== สรุปยอด + ปุ่มไปชำระเงิน =====
                   SafeArea(
                     top: false,
                     child: Container(
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surface,
+                        color: isDark ? Colors.grey[900] : Colors.white,
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
+                            color: Colors.black.withOpacity(0.1),
                             blurRadius: 8,
                             offset: const Offset(0, -2),
                           ),
@@ -240,13 +272,16 @@ class CartPage extends StatelessWidget {
                       child: Column(
                         children: [
                           Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            mainAxisAlignment:
+                                MainAxisAlignment.spaceBetween,
                             children: [
                               const Text('รวมทั้งหมด',
-                                  style: TextStyle(fontWeight: FontWeight.bold)),
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.bold)),
                               Text('฿${total.toStringAsFixed(0)}',
                                   style: const TextStyle(
-                                      fontWeight: FontWeight.w700, fontSize: 16)),
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 16)),
                             ],
                           ),
                           const SizedBox(height: 10),
@@ -260,13 +295,16 @@ class CartPage extends StatelessWidget {
                                   '/payment',
                                   arguments: {
                                     'total': total,
-                                    'items': items.map((e) => {
-                                          'bookId': e['bookId'] ?? e['id'],
-                                          'title': e['title'],
-                                          'price': e['price'],
-                                          'qty': e['qty'] ?? 1,
-                                          'coverUrl': e['coverUrl'],
-                                        }).toList(),
+                                    'items': items
+                                        .map((e) => {
+                                              'bookId':
+                                                  e['bookId'] ?? e['id'],
+                                              'title': e['title'],
+                                              'price': e['price'],
+                                              'qty': e['qty'] ?? 1,
+                                              'coverUrl': e['coverUrl'],
+                                            })
+                                        .toList(),
                                   },
                                 );
                               },
